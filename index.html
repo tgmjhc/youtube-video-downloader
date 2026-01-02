@@ -429,10 +429,9 @@
             }
         }
 
-        /* iOS specific fixes */
         @supports (-webkit-touch-callout: none) {
             input[type="text"] {
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
             }
         }
     </style>
@@ -448,7 +447,7 @@
 
         <div class="main-card">
             <div class="input-group">
-                <label for="videoUrl">📹 Video URL</label>
+                <label for="videoUrl">🔹 Video URL</label>
                 <input 
                     type="text" 
                     id="videoUrl" 
@@ -529,7 +528,7 @@
 
             <div class="info-box">
                 <strong>✨ Features</strong>
-                Supports regular YouTube videos & Shorts • Direct download links • Mobile optimized • All quality options available
+                Direct download links • No redirects • Supports regular videos & Shorts • Mobile optimized • All quality options
             </div>
         </div>
 
@@ -540,7 +539,6 @@
 
     <script>
         function getVideoId(url) {
-            // Support for regular YouTube videos
             let patterns = [
                 /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
                 /youtube\.com\/v\/([^&\n?#]+)/
@@ -551,7 +549,6 @@
                 if (match) return { id: match[1], type: 'video' };
             }
             
-            // Support for YouTube Shorts
             const shortsMatch = url.match(/youtube\.com\/shorts\/([^&\n?#]+)/);
             if (shortsMatch) return { id: shortsMatch[1], type: 'shorts' };
             
@@ -568,7 +565,6 @@
             const resultEl = document.querySelector('.result-area');
             const downloadBtn = document.querySelector('.btn-primary');
 
-            // Reset
             errorEl.classList.remove('show');
             resultEl.classList.remove('show');
             loadingEl.classList.remove('show');
@@ -588,7 +584,6 @@
             loadingEl.classList.add('show');
 
             try {
-                // Fetch video info
                 const apiUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoData.id}&format=json`;
                 const response = await fetch(apiUrl);
                 
@@ -617,47 +612,39 @@
             videoTitle.textContent = data.title;
             videoMeta.textContent = `📺 ${data.author_name} ${videoType === 'shorts' ? '• YouTube Shorts' : ''}`;
 
-            // Direct download services that work on mobile
             const downloadServices = [
                 {
-                    name: `Download ${quality}p MP4`,
+                    name: `Download ${quality}p Video`,
                     url: `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=${quality}`,
-                    badge: 'VIDEO',
-                    direct: true
+                    badge: 'MP4',
+                    description: 'Direct download - fastest option'
                 },
                 {
-                    name: `Y2Mate - ${quality}p`,
-                    url: `https://www.y2mate.com/youtube/${videoId}`,
-                    badge: 'FAST'
+                    name: `Download 720p Video`,
+                    url: `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=720`,
+                    badge: '720p',
+                    description: 'HD quality'
                 },
                 {
-                    name: `SnapSave - ${quality}p`,
-                    url: `https://snapsave.app/download?url=https://www.youtube.com/watch?v=${videoId}`,
-                    badge: 'MOBILE'
-                },
-                {
-                    name: `YT5s - ${quality}p`,
-                    url: `https://yt5s.io/en/youtube-to-mp4/${videoId}`,
-                    badge: 'CLEAN'
-                },
-                {
-                    name: 'Download Audio Only',
+                    name: `Download Audio Only`,
                     url: `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp3`,
                     badge: 'MP3',
-                    direct: true
+                    description: 'Audio extraction'
                 }
             ];
 
             downloadLinks.innerHTML = downloadServices.map(service => `
                 <a href="${service.url}" class="download-btn" target="_blank" rel="noopener noreferrer">
-                    <span>📥 ${service.name}</span>
+                    <span>
+                        🔥 ${service.name}
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">${service.description}</div>
+                    </span>
                     <span class="format-badge">${service.badge}</span>
                 </a>
             `).join('');
 
             resultEl.classList.add('show');
             
-            // Smooth scroll to results on mobile
             setTimeout(() => {
                 resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
@@ -668,13 +655,11 @@
             errorEl.textContent = message;
             errorEl.classList.add('show');
             
-            // Auto hide after 5 seconds
             setTimeout(() => {
                 errorEl.classList.remove('show');
             }, 5000);
         }
 
-        // Enter key support
         document.getElementById('videoUrl').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -682,18 +667,15 @@
             }
         });
 
-        // Paste detection
         document.getElementById('videoUrl').addEventListener('paste', function(e) {
             setTimeout(() => {
                 const url = e.target.value.trim();
                 if (url) {
-                    // Auto-process if URL is pasted
                     setTimeout(processVideo, 500);
                 }
             }, 100);
         });
 
-        // Prevent double-tap zoom on buttons
         let lastTouchEnd = 0;
         document.addEventListener('touchend', function(event) {
             const now = Date.now();
