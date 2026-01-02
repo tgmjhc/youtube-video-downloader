@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidExtract - YouTube Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-cyan: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-blue: #0088ff;
+            --dark-bg: #0a0e27;
+            --darker-bg: #050811;
+            --card-bg: rgba(15, 20, 45, 0.8);
+            --text-primary: #e0e6ff;
+            --text-secondary: #8b93c7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(0, 136, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            margin-bottom: 10px;
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        .tagline {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 300;
+        }
+
+        .main-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 50px 40px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 
+                0 0 40px rgba(0, 255, 255, 0.1),
+                inset 0 0 40px rgba(0, 255, 255, 0.02);
+            position: relative;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-cyan), var(--neon-pink), var(--neon-blue), var(--neon-cyan));
+            border-radius: 20px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s;
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        .main-card:hover::before {
+            opacity: 0.3;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            color: var(--neon-cyan);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 18px 20px;
+            font-size: 1rem;
+            font-family: 'Rajdhani', sans-serif;
+            background: rgba(5, 8, 17, 0.6);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 12px;
+            color: var(--text-primary);
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            background: rgba(5, 8, 17, 0.9);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .quality-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quality-option {
+            position: relative;
+        }
+
+        .quality-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .quality-label {
+            display: block;
+            padding: 20px 15px;
+            text-align: center;
+            background: rgba(5, 8, 17, 0.4);
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        .quality-label:hover {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .quality-option input[type="radio"]:checked + .quality-label {
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.2), rgba(255, 0, 255, 0.2));
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .quality-badge {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+            border: none;
+            border-radius: 12px;
+            color: var(--dark-bg);
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-area {
+            margin-top: 40px;
+            padding: 30px;
+            background: rgba(5, 8, 17, 0.6);
+            border: 2px solid rgba(0, 255, 255, 0.2);
+            border-radius: 12px;
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .result-area.show {
+            display: block;
+        }
+
+        .video-info {
+            margin-bottom: 25px;
+        }
+
+        .video-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--neon-cyan);
+        }
+
+        .video-meta {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .download-links {
+            display: grid;
+            gap: 12px;
+        }
+
+        .download-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 20px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .download-btn:hover {
+            background: rgba(0, 255, 255, 0.15);
+            border-color: var(--neon-cyan);
+            transform: translateX(5px);
+        }
+
+        .format-badge {
+            padding: 5px 12px;
+            background: var(--neon-cyan);
+            color: var(--dark-bg);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .error-message {
+            padding: 20px;
+            background: rgba(255, 0, 100, 0.1);
+            border: 2px solid rgba(255, 0, 100, 0.3);
+            border-radius: 12px;
+            color: #ff4466;
+            margin-top: 20px;
+            display: none;
+            animation: shake 0.5s;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 15px;
+            border: 3px solid rgba(0, 255, 255, 0.1);
+            border-top: 3px solid var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .info-box {
+            margin-top: 40px;
+            padding: 25px;
+            background: rgba(0, 136, 255, 0.05);
+            border: 1px solid rgba(0, 136, 255, 0.3);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .info-box strong {
+            color: var(--neon-blue);
+            display: block;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            }
+            50% {
+                text-shadow: 0 0 50px rgba(0, 255, 255, 0.8), 0 0 70px rgba(255, 0, 255, 0.5);
+            }
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                font-size: 2.5rem;
+            }
+
+            .main-card {
+                padding: 30px 20px;
+            }
+
+            .quality-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    
+    <div class="container">
+        <header>
+            <h1 class="logo">VIDEXTRACT</h1>
+            <p class="tagline">High-Definition Video Extraction Protocol</p>
+        </header>
+
+        <div class="main-card">
+            <div class="input-group">
+                <label for="videoUrl">Video URL</label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="videoUrl" 
+                        placeholder="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                        autocomplete="off"
+                    >
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Quality Selection</label>
+                <div class="quality-grid">
+                    <div class="quality-option">
+                        <input type="radio" id="quality2160" name="quality" value="2160">
+                        <label for="quality2160" class="quality-label">
+                            4K
+                            <span class="quality-badge">2160p</span>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality1440" name="quality" value="1440">
+                        <label for="quality1440" class="quality-label">
+                            QHD
+                            <span class="quality-badge">1440p</span>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality1080" name="quality" value="1080" checked>
+                        <label for="quality1080" class="quality-label">
+                            FHD
+                            <span class="quality-badge">1080p</span>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality720" name="quality" value="720">
+                        <label for="quality720" class="quality-label">
+                            HD
+                            <span class="quality-badge">720p</span>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality480" name="quality" value="480">
+                        <label for="quality480" class="quality-label">
+                            SD
+                            <span class="quality-badge">480p</span>
+                        </label>
+                    </div>
+                    <div class="quality-option">
+                        <input type="radio" id="quality360" name="quality" value="360">
+                        <label for="quality360" class="quality-label">
+                            LOW
+                            <span class="quality-badge">360p</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="processVideo()">
+                Initialize Download
+            </button>
+
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Processing video data...</p>
+            </div>
+
+            <div class="error-message"></div>
+
+            <div class="result-area">
+                <div class="video-info">
+                    <h3 class="video-title"></h3>
+                    <p class="video-meta"></p>
+                </div>
+                <div class="download-links"></div>
+            </div>
+
+            <div class="info-box">
+                <strong>📌 How to Use</strong>
+                Paste any YouTube video URL, select your preferred quality, and click "Initialize Download". You'll get multiple download service options that support your selected quality.
+            </div>
+        </div>
+
+        <footer>
+            <p>VIDEXTRACT © 2026 | Advanced Media Extraction Technology</p>
+            <p style="margin-top: 10px; font-size: 0.8rem;">Please respect copyright and terms of service when downloading content.</p>
+        </footer>
+    </div>
+
+    <script>
+        function getVideoId(url) {
+            const patterns = [
+                /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+                /youtube\.com\/v\/([^&\n?#]+)/
+            ];
+            
+            for (const pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+
+        async function processVideo() {
+            const urlInput = document.getElementById('videoUrl');
+            const url = urlInput.value.trim();
+            const quality = document.querySelector('input[name="quality"]:checked').value;
+            
+            const loadingEl = document.querySelector('.loading');
+            const errorEl = document.querySelector('.error-message');
+            const resultEl = document.querySelector('.result-area');
+            const downloadBtn = document.querySelector('.btn-primary');
+
+            // Reset states
+            errorEl.classList.remove('show');
+            resultEl.classList.remove('show');
+            loadingEl.classList.remove('show');
+
+            // Validate URL
+            if (!url) {
+                showError('Please enter a YouTube URL');
+                return;
+            }
+
+            const videoId = getVideoId(url);
+            if (!videoId) {
+                showError('Invalid YouTube URL. Please enter a valid YouTube video link.');
+                return;
+            }
+
+            // Show loading
+            downloadBtn.disabled = true;
+            loadingEl.classList.add('show');
+
+            try {
+                // Fetch video info using YouTube oEmbed API
+                const apiUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+                
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error('Video not found or unavailable');
+                }
+
+                const data = await response.json();
+                
+                loadingEl.classList.remove('show');
+                downloadBtn.disabled = false;
+
+                // Display video info and download options
+                displayVideoInfo(data, videoId, quality);
+
+            } catch (error) {
+                loadingEl.classList.remove('show');
+                downloadBtn.disabled = false;
+                showError('Unable to fetch video information. The video might be private, deleted, or age-restricted.');
+            }
+        }
+
+        function displayVideoInfo(data, videoId, quality) {
+            const resultEl = document.querySelector('.result-area');
+            const videoTitle = document.querySelector('.video-title');
+            const videoMeta = document.querySelector('.video-meta');
+            const downloadLinks = document.querySelector('.download-links');
+
+            videoTitle.textContent = data.title;
+            videoMeta.textContent = `Channel: ${data.author_name}`;
+
+            // Popular YouTube downloader services
+            const services = [
+                {
+                    name: 'Y2Mate (Fast & Reliable)',
+                    url: `https://www.y2mate.com/youtube/${videoId}`,
+                    badge: 'RECOMMENDED'
+                },
+                {
+                    name: 'SaveFrom.net',
+                    url: `https://savefrom.net/#url=https://www.youtube.com/watch?v=${videoId}&lang=en`,
+                    badge: 'POPULAR'
+                },
+                {
+                    name: 'YT5s (No Ads)',
+                    url: `https://yt5s.io/en/youtube-to-mp4/${videoId}`,
+                    badge: 'CLEAN'
+                },
+                {
+                    name: 'YTMate (HD Quality)',
+                    url: `https://ytmate.app/en/youtube-downloader/${videoId}`,
+                    badge: 'HD'
+                },
+                {
+                    name: '9xBuddy',
+                    url: `https://9xbuddy.org/process?url=https://www.youtube.com/watch?v=${videoId}`,
+                    badge: 'SIMPLE'
+                }
+            ];
+
+            downloadLinks.innerHTML = services.map(service => `
+                <a href="${service.url}" class="download-btn" target="_blank" rel="noopener noreferrer">
+                    <span>📥 ${service.name}</span>
+                    <span class="format-badge">${service.badge}</span>
+                </a>
+            `).join('');
+
+            // Add direct YouTube link
+            downloadLinks.innerHTML += `
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0, 255, 255, 0.2);">
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 12px;">
+                        💡 Tip: Click any service above to download in ${quality}p quality. Most services let you select quality before downloading.
+                    </p>
+                    <a href="https://www.youtube.com/watch?v=${videoId}" class="download-btn" target="_blank" rel="noopener noreferrer">
+                        <span>🎬 Watch on YouTube</span>
+                        <span class="format-badge">ORIGINAL</span>
+                    </a>
+                </div>
+            `;
+
+            resultEl.classList.add('show');
+        }
+
+        function showError(message) {
+            const errorEl = document.querySelector('.error-message');
+            errorEl.textContent = '❌ ' + message;
+            errorEl.classList.add('show');
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('videoUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processVideo();
+            }
+        });
+    </script>
+</body>
+</html>
